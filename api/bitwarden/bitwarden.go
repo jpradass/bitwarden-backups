@@ -1,4 +1,4 @@
-package api
+package bitwarden
 
 import (
 	"encoding/json"
@@ -10,22 +10,22 @@ import (
 )
 
 type BitWardenAPI struct {
-	client *my_http.HttpClient
-	token  string
+	authURL string
+	token   string
 }
 
 func New() *BitWardenAPI {
 	return &BitWardenAPI{
-		client: my_http.New(),
-		token:  "",
+		authURL: "https://identity.bitwarden.com/connect/token",
+		token:   "",
 	}
 }
 
 func (bwAPI *BitWardenAPI) auth() error {
-	response, err := bwAPI.client.MakeRequest(
+	response, err := my_http.MakeRequest(
 		"POST",
-		"https://identity.bitwarden.com/connect/token",
-		[]byte(fmt.Sprintf("grant_type=client_credentials&scope=api&client_id=%s&client_secret=%s", os.Getenv("BITWARDEN_CLIENT_ID"), os.Getenv("BITWARDEN_CLIENT_SECRET"))),
+		bwAPI.authURL,
+		[]byte(fmt.Sprintf("deviceName=firefox&deviceIdentifier=0&deviceType=0&grant_type=client_credentials&scope=api&client_id=%s&client_secret=%s", os.Getenv("BITWARDEN_CLIENT_ID"), os.Getenv("BITWARDEN_CLIENT_SECRET"))),
 		map[string]string{"Content-Type": "application/x-www-form-urlencoded"},
 	)
 	if err != nil {

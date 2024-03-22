@@ -14,28 +14,21 @@ type HttpClient struct {
 
 func init() {
 	// logger
-}
-
-func New() *HttpClient {
-	if httpClient != nil {
-		return httpClient
-	}
-
-	httpClient = &HttpClient{
-		client: &http.Client{
-			Timeout: 5 * time.Second,
-			Transport: &http.Transport{
-				IdleConnTimeout: 10 * time.Second,
-				//This can be set up to avoid server cert verification or to add client certificates
-				//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	if httpClient == nil {
+		httpClient = &HttpClient{
+			client: &http.Client{
+				Timeout: 5 * time.Second,
+				Transport: &http.Transport{
+					IdleConnTimeout: 10 * time.Second,
+					//This can be set up to avoid server cert verification or to add client certificates
+					//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				},
 			},
-		},
+		}
 	}
-
-	return httpClient
 }
 
-func (hc *HttpClient) MakeRequest(method, uri string, body []byte, headers map[string]string) (*http.Response, error) {
+func MakeRequest(method, uri string, body []byte, headers map[string]string) (*http.Response, error) {
 	var (
 		request *http.Request
 		err     error
@@ -63,5 +56,5 @@ func (hc *HttpClient) MakeRequest(method, uri string, body []byte, headers map[s
 		request.Header.Set(k, v)
 	}
 
-	return hc.client.Do(request)
+	return httpClient.client.Do(request)
 }
