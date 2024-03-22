@@ -7,6 +7,8 @@ import (
 	"os"
 
 	my_http "github.com/jpradass/bitwarden-backups/http"
+	"github.com/jpradass/bitwarden-backups/logging"
+	"go.uber.org/zap"
 )
 
 type BitWardenAPI struct {
@@ -14,6 +16,13 @@ type BitWardenAPI struct {
 	token   string
 }
 
+var logger *zap.SugaredLogger
+
+func init() {
+	logger = logging.New()
+}
+
+// We need to check until when it's validated
 func New() *BitWardenAPI {
 	return &BitWardenAPI{
 		authURL: "https://identity.bitwarden.com/connect/token",
@@ -22,6 +31,8 @@ func New() *BitWardenAPI {
 }
 
 func (bwAPI *BitWardenAPI) auth() error {
+	logger.Debug("Obtaining authorization token...")
+
 	response, err := my_http.MakeRequest(
 		"POST",
 		bwAPI.authURL,
@@ -47,4 +58,41 @@ func (bwAPI *BitWardenAPI) auth() error {
 
 	bwAPI.token = body["access_token"].(string)
 	return nil
+}
+
+func (bwAPI *BitWardenAPI) ListCollections() error {
+	logger.Debug("Listing collections...")
+
+	bwAPI.checkAuth()
+
+	response, err := my_http.MakeRequest(
+		"GET",
+		"https://api.bitwarden.com/public/collections",
+		nil,
+		map[string]string{
+			"Authorization": fmt.Sprintf("Bearer %s", bwAPI.token),
+			"Content-Type":  "application/json",
+		},
+	)
+	if err != nil {
+		return err
+	}
+
+	defer response.Body.Close()
+
+	bbody, err := io.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(bbody))
+	return nil
+}
+
+func (bwAPI *BitWardenAPI) checkAuth() {
+	if bwAPI.token == "" {
+		if err := bwAPI.auth(); err != nil {
+			logger.Error("There was an error trying to authenticate on Bitwarden. Error: ", err.Error())
+		}
+	}
 }
